@@ -1,11 +1,11 @@
-var redis = require('redis');
+var Redis = require('ioredis');
 
 module.exports = function (broker) {
   var brokerOptions = broker.options.brokerOptions;
   var instanceId = broker.instanceId;
   
-  var subClient = redis.createClient(brokerOptions.port, brokerOptions.host, brokerOptions);
-  var pubClient = redis.createClient(brokerOptions.port, brokerOptions.host, brokerOptions);
+  var subClient = new Redis(brokerOptions.redis);
+  var pubClient = new Redis(brokerOptions.redis);
 
   var publishToCluster = function (channel, data) {
     if (data instanceof Object) {
