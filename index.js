@@ -1,15 +1,13 @@
 var redis = require('redis');
 
-module.exports.attach = function (broker) {
+module.exports = function (broker) {
   var brokerOptions = broker.options.brokerOptions;
   var instanceId = broker.instanceId;
   
   var subClient = redis.createClient(brokerOptions.port, brokerOptions.host, brokerOptions);
   var pubClient = redis.createClient(brokerOptions.port, brokerOptions.host, brokerOptions);
-  
-  broker.on('subscribe', subClient.subscribe.bind(subClient));
-  broker.on('unsubscribe', subClient.unsubscribe.bind(subClient));
-  broker.on('publish', function (channel, data) {
+
+  var publishToCluster = function (channel, data) {
     if (data instanceof Object) {
       try {
         data = '/o:' + JSON.stringify(data);
@@ -25,7 +23,11 @@ module.exports.attach = function (broker) {
     }
     
     pubClient.publish(channel, data);
-  });
+  };
+
+  broker.on('subscribe', subClient.subscribe.bind(subClient));
+  broker.on('unsubscribe', subClient.unsubscribe.bind(subClient));
+  broker.on('publish', publishToCluster);
   
   var instanceIdRegex = /^[^\/]*\//;
   
@@ -54,4 +56,13 @@ module.exports.attach = function (broker) {
       broker.publish(channel, data);
     }
   });
+
+  var instance = {};
+
+  instance.publish = function(channel, data) {
+    broker.publish(channel, data);
+    publishToCluster(channel, data);
+  }
+
+  return instance;
 };
