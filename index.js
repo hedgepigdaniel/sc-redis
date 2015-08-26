@@ -7,7 +7,7 @@ module.exports = function (broker) {
   var subClient = new Redis(brokerOptions.redis);
   var pubClient = new Redis(brokerOptions.redis);
 
-  var publishToCluster = function (channel, data) {
+  var publishToCluster = function (channel, data, skipInstanceId) {
     if (data instanceof Object) {
       try {
         data = '/o:' + JSON.stringify(data);
@@ -18,7 +18,7 @@ module.exports = function (broker) {
       data = '/s:' + data;
     }
     
-    if (instanceId != null) {
+    if (instanceId != null && !skipInstanceId) {
       data = instanceId + data;
     }
     
@@ -59,9 +59,8 @@ module.exports = function (broker) {
 
   var instance = {};
 
-  instance.publish = function(channel, data) {
-    broker.publish(channel, data);
-    publishToCluster(channel, data);
+  instance.publish = function(channel, data, publishToSelf) {
+    publishToCluster(channel, data, publishToSelf);
   }
 
   return instance;
